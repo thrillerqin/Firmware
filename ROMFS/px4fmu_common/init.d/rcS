@@ -461,7 +461,7 @@ then
 	    commander start
 	fi
 
-	if send_event start_listening
+	if send_event start
 	then
 	fi
 
