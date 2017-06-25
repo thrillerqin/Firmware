@@ -89,7 +89,11 @@
 #include <uORB/topics/vision_position_estimate.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 #include <uORB/topics/wind_estimate.h>
+
+#include	<uORB/topics/sensor_atmos.h>
 #include <uORB/uORB.h>
+
+#include	<v1.0/sensor_atmos/mavlink_msg_sensor_atmos.h>
 
 
 static uint16_t cm_uint16_from_m_float(float m);
@@ -3265,8 +3269,77 @@ protected:
 	}
 };
 
+class MavlinkStreamSensorAtmos : public MavlinkStream
+{
+public:
+	const char *get_name() const
+	{
+		return MavlinkStreamSensorAtmos::get_name_static();
+	}
+
+	static const char *get_name_static()
+	{
+		return "SENSOR_ATMOS";
+	}
+
+	static uint8_t get_id_static()
+	{
+		return MAVLINK_MSG_ID_SENSOR_ATMOS;
+	}
+
+	uint8_t get_id()
+	{
+		return get_id_static();
+	}
+
+    static MavlinkStream *new_instance(Mavlink *mavlink)
+    {
+        return new MavlinkStreamSensorAtmos(mavlink);
+    }
+    unsigned get_size()
+    {
+        return MAVLINK_MSG_ID_SENSOR_ATMOS_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES;
+    }
+
+private:
+    MavlinkOrbSubscription *_sub;
+    uint64_t _sensor_atmos_time;
+
+    /* do not allow top copying this class */
+    MavlinkStreamSensorAtmos(MavlinkStreamSensorAtmos &);
+    MavlinkStreamSensorAtmos& operator = (const MavlinkStreamSensorAtmos &);
+
+protected:
+    explicit MavlinkStreamSensorAtmos(Mavlink *mavlink) : MavlinkStream(mavlink),
+        _sub(_mavlink->add_orb_subscription(ORB_ID(sensor_atmos))),  // make sure you enter the name of your uORB topic here
+		_sensor_atmos_time(0)
+    {}
+
+    void send(const hrt_abstime t)
+    {
+        struct sensor_atmos_s _sensor_atmos;    //make sure ca_traj_struct_s is the definition of your uORB topic
+mavlink_sensor_atmos_t _msg_sensor_atmos;  //make sure mavlink_ca_trajectory_t is the definition of your custom mavlink message
+//无论如何先输出
+        if (_sub->update(&_sensor_atmos_time, &_sensor_atmos)) {
+
+_msg_sensor_atmos.CO = _sensor_atmos.CO;
+_msg_sensor_atmos.NO2 = _sensor_atmos.NO2;
+_msg_sensor_atmos.O3 = _sensor_atmos.O3;
+_msg_sensor_atmos.SO2 = _sensor_atmos.SO2;
+
+            //_mavlink->send_message(MAVLINK_MSG_ID_SENSOR_ATMOS_RAW, &_msg_sensor_atmos);
+			mavlink_msg_sensor_atmos_send_struct(_mavlink->get_channel(), &_msg_sensor_atmos);
+        }
+//        else{
+//mavlink_msg_sensor_atmos_send_struct(_mavlink->get_channel(), &_msg_sensor_atmos);
+ //       }
+    }
+};
+
+
+
 const StreamListItem *streams_list[] = {
-	new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
+	/*new StreamListItem(&MavlinkStreamHeartbeat::new_instance, &MavlinkStreamHeartbeat::get_name_static, &MavlinkStreamHeartbeat::get_id_static),
 	new StreamListItem(&MavlinkStreamStatustext::new_instance, &MavlinkStreamStatustext::get_name_static, &MavlinkStreamStatustext::get_id_static),
 	new StreamListItem(&MavlinkStreamCommandLong::new_instance, &MavlinkStreamCommandLong::get_name_static, &MavlinkStreamCommandLong::get_id_static),
 	new StreamListItem(&MavlinkStreamSysStatus::new_instance, &MavlinkStreamSysStatus::get_name_static, &MavlinkStreamSysStatus::get_id_static),
@@ -3308,5 +3381,6 @@ const StreamListItem *streams_list[] = {
 	new StreamListItem(&MavlinkStreamAltitude::new_instance, &MavlinkStreamAltitude::get_name_static, &MavlinkStreamAltitude::get_id_static),
 	new StreamListItem(&MavlinkStreamADSBVehicle::new_instance, &MavlinkStreamADSBVehicle::get_name_static, &MavlinkStreamADSBVehicle::get_id_static),
 	new StreamListItem(&MavlinkStreamWind::new_instance, &MavlinkStreamWind::get_name_static, &MavlinkStreamWind::get_id_static),
+	*/new StreamListItem(&MavlinkStreamSensorAtmos::new_instance, &MavlinkStreamSensorAtmos::get_name_static, &MavlinkStreamSensorAtmos::get_id_static),
 	nullptr
 };

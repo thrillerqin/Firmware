@@ -45,10 +45,14 @@
 #include <stdio.h>
 #include <poll.h>
 #include <string.h>
-
 #include <uORB/uORB.h>
+#include <uORB/topics/sensor_atmos.h>
 #include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/vehicle_attitude.h>
+
+
+//#include <v2.0/sensor_atmos/mavlink_msg_sensor_atmos.h>
+
 
 __EXPORT int px4_simple_app_main(int argc, char *argv[]);
 
@@ -60,6 +64,10 @@ int px4_simple_app_main(int argc, char *argv[])
 	int sensor_sub_fd = orb_subscribe(ORB_ID(sensor_combined));
 	orb_set_interval(sensor_sub_fd, 1000);
 
+	//订阅大气传感器的主题
+	int sensor_atmos_sub_fd = orb_subscribe(ORB_ID(sensor_atmos));
+	orb_set_interval(sensor_atmos_sub_fd, 1000);
+
 	/* advertise attitude topic */
 	struct vehicle_attitude_s att;
 	memset(&att, 0, sizeof(att));
@@ -68,6 +76,7 @@ int px4_simple_app_main(int argc, char *argv[])
 	/* one could wait for multiple topics with this technique, just using one here */
 	px4_pollfd_struct_t fds[] = {
 		{ .fd = sensor_sub_fd,   .events = POLLIN },
+		{ .fd = sensor_atmos_sub_fd,   .events = POLLIN },
 		/* there could be more file descriptors here, in the form like:
 		 * { .fd = other_sub_fd,   .events = POLLIN },
 		 */
@@ -75,9 +84,9 @@ int px4_simple_app_main(int argc, char *argv[])
 
 	int error_counter = 0;
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 50; i++) {
 		/* wait for sensor update of 1 file descriptor for 1000 ms (1 second) */
-		int poll_ret = px4_poll(fds, 1, 1000);
+		int poll_ret = px4_poll(fds, 2, 1000);
 
 		/* handle the poll result */
 		if (poll_ret == 0) {
@@ -111,6 +120,23 @@ int px4_simple_app_main(int argc, char *argv[])
 				att.pitch = raw.accelerometer_m_s2[1];
 				att.yaw = raw.accelerometer_m_s2[2];
 				orb_publish(ORB_ID(vehicle_attitude), att_pub, &att);
+			}
+			if (fds[1].revents & POLLIN) {
+				/* obtained data for the first file descriptor */
+				struct sensor_atmos_s _sensor_atmos;
+				/* copy sensors raw data into local buffer */
+				orb_copy(ORB_ID(sensor_atmos), sensor_atmos_sub_fd, &_sensor_atmos);
+/*
+mavlink_sensor_atmos_t _msg_sensor_atmos;  //make sure mavlink_ca_trajectory_t is the definition of your custom mavlink message
+_msg_sensor_atmos.CO = _sensor_atmos.CO;
+_msg_sensor_atmos.NO2 = _sensor_atmos.NO2;
+_msg_sensor_atmos.O3 = _sensor_atmos.O3;
+_msg_sensor_atmos.SO2 = _sensor_atmos.SO2;
+
+//_mavlink->send_message(MAVLINK_MSG_ID_SENSOR_ATMOS_RAW, &_msg_sensor_atmos);
+mavlink_msg_sensor_atmos_send_struct(_mavlink->get_channel(), &_msg_sensor_atmos);
+*/
+				PX4_WARN("[YCM]sensor_atmos_data.CO=%d", _sensor_atmos.CO);
 			}
 
 			/* there could be more file descriptors here, in the form like:

@@ -118,6 +118,7 @@ set(msg_file_names
 	vision_position_estimate.msg
 	vtol_vehicle_status.msg
 	wind_estimate.msg
+	sensor_atmos.msg	#天腾大气传感器
 	)
 
 # Get absolute paths

@@ -84,7 +84,6 @@
 
 #include <ecl/EKF/ekf.h>
 
-
 extern "C" __EXPORT int ekf2_main(int argc, char *argv[]);
 
 

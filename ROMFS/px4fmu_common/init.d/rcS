@@ -906,9 +906,11 @@ then
 		# Play SOS
 		tone_alarm error
 	fi
-
+	
+tianteng_atmos_detect start /dev/ttyS6
 # End of autostart
 fi
+
 
 # There is no further script processing, so we can free some RAM
 # XXX potentially unset all script variables.

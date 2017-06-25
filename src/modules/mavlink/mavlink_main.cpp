@@ -1894,7 +1894,7 @@ Mavlink::task_main(int argc, char *argv[])
 
 	/* HEARTBEAT is constant rate stream, rate never adjusted */
 	configure_stream("HEARTBEAT", 1.0f);
-
+configure_stream("SENSOR_ATMOS", 1.0f);
 	/* STATUSTEXT stream is like normal stream but gets messages from logbuffer instead of uORB */
 	configure_stream("STATUSTEXT", 20.0f);
 
